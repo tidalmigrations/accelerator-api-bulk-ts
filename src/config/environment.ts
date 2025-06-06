@@ -1,0 +1,40 @@
+import * as dotenv from 'dotenv';
+import { ConfigurationError } from '../utils/errors';
+
+// Load environment variables
+dotenv.config();
+
+export interface Config {
+  workspace: string;
+  baseUrl: string;
+  logLevel: string;
+}
+
+export function loadConfig(): Config {
+  const workspace = process.env.TIDAL_WORKSPACE;
+  const logLevel = process.env.LOG_LEVEL || 'info';
+
+  if (!workspace) {
+    throw new ConfigurationError('TIDAL_WORKSPACE environment variable is required');
+  }
+
+  // Auto-generate base URL from workspace
+  const baseUrl = process.env.TIDAL_BASE_URL || `https://${workspace}.tidal.cloud/api/v1`;
+
+  return {
+    workspace,
+    baseUrl,
+    logLevel,
+  };
+}
+
+export function getAuthCredentials(): { username: string; password: string } {
+  const username = process.env.TIDAL_USERNAME;
+  const password = process.env.TIDAL_PASSWORD;
+
+  if (!username || !password) {
+    throw new ConfigurationError('TIDAL_USERNAME and TIDAL_PASSWORD environment variables are required');
+  }
+
+  return { username, password };
+} 
