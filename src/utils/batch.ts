@@ -68,8 +68,8 @@ export class BatchProcessor<T> {
   ): Promise<BatchResult<T>> {
     let attempt = 0;
     let remainingItems = [...items];
-    let allSuccessful: T[] = [];
-    let allFailed: Array<{ item: T; error: string }> = [];
+    const allSuccessful: T[] = [];
+    const allFailed: Array<{ item: T; error: string }> = [];
 
     while (attempt <= retries) {
       try {

@@ -1,7 +1,6 @@
 import { TidalApiClient } from '../api/client';
 import { BulkOperationConfig, BulkResult, DryRunResult, ValidationResult } from '../types/bulk';
 import { BulkOperationsService } from '../api/bulk';
-import { InputValidator } from '../utils/validation';
 import { Logger, LogLevel } from '../utils/logger';
 
 export abstract class BaseBulkOperation<T> {
@@ -205,7 +204,7 @@ export abstract class BaseBulkOperation<T> {
     const extracted: any = {};
     
     for (const field of fields) {
-      if (resourceAny.hasOwnProperty(field)) {
+      if (Object.prototype.hasOwnProperty.call(resourceAny, field)) {
         extracted[field] = resourceAny[field];
       }
     }

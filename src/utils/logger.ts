@@ -86,6 +86,7 @@ export class Logger {
       const timestamp = entry.timestamp.toISOString();
       const contextStr = context ? ` ${this.serializeContext(context)}` : '';
       
+      // eslint-disable-next-line no-console
       console.log(`[${timestamp}] ${levelName}: ${message}${contextStr}`);
     }
   }
