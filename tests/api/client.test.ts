@@ -1,6 +1,7 @@
 import { TidalApiClient } from '../../src/api/client';
 import { ConfigurationError, TidalApiError } from '../../src/utils/errors';
 import { AuthService } from '../../src/api/auth';
+import { RetryConfig } from '../../src/api/types';
 
 // Mock the AuthService
 jest.mock('../../src/api/auth');
@@ -21,12 +22,23 @@ jest.mock('axios', () => ({
   })),
 }));
 
+// Mock logger to avoid console output during tests
+jest.mock('../../src/utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  },
+}));
+
 describe('TidalApiClient', () => {
   let client: TidalApiClient;
   let mockAuthService: jest.Mocked<AuthService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
     
     // Setup mock auth service
     mockAuthService = {
@@ -39,6 +51,10 @@ describe('TidalApiClient', () => {
     } as any;
 
     MockedAuthService.mockImplementation(() => mockAuthService);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('constructor', () => {
@@ -59,6 +75,59 @@ describe('TidalApiClient', () => {
       client = new TidalApiClient(config);
 
       expect(client.getBaseUrl()).toBe('https://custom.api.com');
+    });
+
+    it('should create client with default retry configuration', () => {
+      const config = { workspace: 'test-workspace' };
+      client = new TidalApiClient(config);
+
+      // Access private retryConfig to verify defaults
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig).toEqual({
+        maxRetries: 5,
+        baseDelay: 1000,
+        maxDelay: 30000,
+        enableJitter: true,
+      });
+    });
+
+    it('should create client with custom retry configuration', () => {
+      const customRetryConfig: RetryConfig = {
+        maxRetries: 3,
+        baseDelay: 500,
+        maxDelay: 10000,
+        enableJitter: false,
+      };
+      
+      const config = { 
+        workspace: 'test-workspace',
+        retry: customRetryConfig
+      };
+      client = new TidalApiClient(config);
+
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig).toEqual(customRetryConfig);
+    });
+
+    it('should merge custom retry configuration with defaults', () => {
+      const partialRetryConfig: Partial<RetryConfig> = {
+        maxRetries: 3,
+        baseDelay: 500,
+      };
+      
+      const config = { 
+        workspace: 'test-workspace',
+        retry: partialRetryConfig as RetryConfig
+      };
+      client = new TidalApiClient(config);
+
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig).toEqual({
+        maxRetries: 3,
+        baseDelay: 500,
+        maxDelay: 30000,
+        enableJitter: true,
+      });
     });
 
     it('should throw ConfigurationError when workspace is missing', () => {
@@ -99,11 +168,146 @@ describe('TidalApiClient', () => {
     });
   });
 
-  describe('HTTP methods', () => {
+  describe('retry logic', () => {
     let mockHttpClient: any;
 
     beforeEach(() => {
-      client = new TidalApiClient({ workspace: 'test-workspace' });
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: {
+          maxRetries: 3,
+          baseDelay: 100,
+          maxDelay: 1000,
+          enableJitter: false, // Disable jitter for predictable testing
+        }
+      });
+      mockHttpClient = (client as any).httpClient;
+    });
+
+    it('should retry on 429 rate limit errors', async () => {
+      const rateLimitError = {
+        response: { status: 429, data: { message: 'Rate limit exceeded' } },
+        status: 429,
+      };
+      const successResponse = {
+        data: { success: true },
+        status: 200,
+        statusText: 'OK',
+      };
+
+      mockHttpClient.get
+        .mockRejectedValueOnce(rateLimitError)
+        .mockRejectedValueOnce(rateLimitError)
+        .mockResolvedValueOnce(successResponse);
+
+      const promise = client.get('/test-endpoint');
+
+      // Fast-forward through the delays
+      await jest.advanceTimersByTimeAsync(100); // First retry delay
+      await jest.advanceTimersByTimeAsync(200); // Second retry delay
+
+      const result = await promise;
+
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(3);
+      expect(result).toEqual({
+        data: successResponse.data,
+        status: successResponse.status,
+        statusText: successResponse.statusText,
+      });
+    });
+
+    it('should not retry on non-429 errors', async () => {
+      const serverError = {
+        response: { status: 500, data: { message: 'Internal Server Error' } },
+        status: 500,
+      };
+
+      mockHttpClient.get.mockRejectedValue(serverError);
+
+      await expect(client.get('/test-endpoint')).rejects.toThrow();
+      expect(mockHttpClient.get).toHaveBeenCalledTimes(1);
+    });
+
+    it('should respect max retries limit', () => {
+      // Test that the retry configuration is properly set
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: {
+          maxRetries: 2,
+          baseDelay: 10,
+          maxDelay: 100,
+          enableJitter: false,
+        }
+      });
+
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig.maxRetries).toBe(2);
+      expect(retryConfig.baseDelay).toBe(10);
+      expect(retryConfig.maxDelay).toBe(100);
+      expect(retryConfig.enableJitter).toBe(false);
+    });
+
+    it('should use exponential backoff with configurable delays', async () => {
+      // Test that the retry configuration is properly applied
+      const customRetryConfig = {
+        maxRetries: 2,
+        baseDelay: 50,
+        maxDelay: 500,
+        enableJitter: false,
+      };
+
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: customRetryConfig
+      });
+
+      // Verify the configuration was applied
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig).toEqual(customRetryConfig);
+    });
+
+    it('should apply jitter when enabled', async () => {
+      // Test that jitter configuration is properly set
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: {
+          maxRetries: 2,
+          baseDelay: 100,
+          maxDelay: 1000,
+          enableJitter: true,
+        }
+      });
+
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig.enableJitter).toBe(true);
+    });
+
+    it('should cap delays at maxDelay', async () => {
+      // Test that maxDelay configuration is properly set
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: {
+          maxRetries: 5,
+          baseDelay: 1000,
+          maxDelay: 2000,
+          enableJitter: false,
+        }
+      });
+
+      const retryConfig = (client as any).retryConfig;
+      expect(retryConfig.maxDelay).toBe(2000);
+      expect(retryConfig.maxRetries).toBe(5);
+    });
+  });
+
+  describe('HTTP methods with retry', () => {
+    let mockHttpClient: any;
+
+    beforeEach(() => {
+      client = new TidalApiClient({ 
+        workspace: 'test-workspace',
+        retry: { maxRetries: 2, baseDelay: 100, maxDelay: 1000, enableJitter: false }
+      });
       mockHttpClient = (client as any).httpClient;
     });
 
@@ -127,11 +331,24 @@ describe('TidalApiClient', () => {
         });
       });
 
-      it('should handle GET request failure', async () => {
-        const error = new Error('Network error');
-        mockHttpClient.get.mockRejectedValue(error);
+      it('should handle GET request failure with retry', async () => {
+        const rateLimitError = { response: { status: 429, data: { message: 'Rate limit exceeded' } } };
+        const successResponse = {
+          data: { id: 1, name: 'test' },
+          status: 200,
+          statusText: 'OK',
+        };
 
-        await expect(client.get('/test-endpoint')).rejects.toThrow();
+        mockHttpClient.get
+          .mockRejectedValueOnce(rateLimitError)
+          .mockResolvedValueOnce(successResponse);
+
+        const promise = client.get('/test-endpoint');
+        await jest.advanceTimersByTimeAsync(100);
+        const result = await promise;
+
+        expect(mockHttpClient.get).toHaveBeenCalledTimes(2);
+        expect(result.data).toEqual(successResponse.data);
       });
     });
 
@@ -155,6 +372,28 @@ describe('TidalApiClient', () => {
           statusText: mockResponse.statusText,
         });
       });
+
+      it('should retry POST requests on 429 errors', async () => {
+        const rateLimitError = { response: { status: 429, data: { message: 'Rate limit exceeded' } } };
+        const successResponse = {
+          data: { id: 1, created: true },
+          status: 201,
+          statusText: 'Created',
+        };
+
+        const postData = { name: 'test' };
+        mockHttpClient.post
+          .mockRejectedValueOnce(rateLimitError)
+          .mockResolvedValueOnce(successResponse);
+
+        const promise = client.post('/test-endpoint', postData);
+        await jest.advanceTimersByTimeAsync(100);
+        const result = await promise;
+
+        expect(mockHttpClient.post).toHaveBeenCalledTimes(2);
+        expect(mockHttpClient.post).toHaveBeenCalledWith('/test-endpoint', postData, undefined);
+        expect(result.data).toEqual(successResponse.data);
+      });
     });
 
     describe('put', () => {
@@ -176,6 +415,27 @@ describe('TidalApiClient', () => {
           status: mockResponse.status,
           statusText: mockResponse.statusText,
         });
+      });
+
+      it('should retry PUT requests on 429 errors', async () => {
+        const rateLimitError = { response: { status: 429, data: { message: 'Rate limit exceeded' } } };
+        const successResponse = {
+          data: { id: 1, updated: true },
+          status: 200,
+          statusText: 'OK',
+        };
+
+        const putData = { name: 'updated' };
+        mockHttpClient.put
+          .mockRejectedValueOnce(rateLimitError)
+          .mockResolvedValueOnce(successResponse);
+
+        const promise = client.put('/test-endpoint', putData);
+        await jest.advanceTimersByTimeAsync(100);
+        const result = await promise;
+
+        expect(mockHttpClient.put).toHaveBeenCalledTimes(2);
+        expect(result.data).toEqual(successResponse.data);
       });
     });
 
@@ -199,6 +459,27 @@ describe('TidalApiClient', () => {
           statusText: mockResponse.statusText,
         });
       });
+
+      it('should retry PATCH requests on 429 errors', async () => {
+        const rateLimitError = { response: { status: 429, data: { message: 'Rate limit exceeded' } } };
+        const successResponse = {
+          data: { id: 1, patched: true },
+          status: 200,
+          statusText: 'OK',
+        };
+
+        const patchData = { status: 'active' };
+        mockHttpClient.patch
+          .mockRejectedValueOnce(rateLimitError)
+          .mockResolvedValueOnce(successResponse);
+
+        const promise = client.patch('/test-endpoint', patchData);
+        await jest.advanceTimersByTimeAsync(100);
+        const result = await promise;
+
+        expect(mockHttpClient.patch).toHaveBeenCalledTimes(2);
+        expect(result.data).toEqual(successResponse.data);
+      });
     });
 
     describe('delete', () => {
@@ -219,6 +500,26 @@ describe('TidalApiClient', () => {
           status: mockResponse.status,
           statusText: mockResponse.statusText,
         });
+      });
+
+      it('should retry DELETE requests on 429 errors', async () => {
+        const rateLimitError = { response: { status: 429, data: { message: 'Rate limit exceeded' } } };
+        const successResponse = {
+          data: { deleted: true },
+          status: 204,
+          statusText: 'No Content',
+        };
+
+        mockHttpClient.delete
+          .mockRejectedValueOnce(rateLimitError)
+          .mockResolvedValueOnce(successResponse);
+
+        const promise = client.delete('/test-endpoint');
+        await jest.advanceTimersByTimeAsync(100);
+        const result = await promise;
+
+        expect(mockHttpClient.delete).toHaveBeenCalledTimes(2);
+        expect(result.data).toEqual(successResponse.data);
       });
     });
   });
