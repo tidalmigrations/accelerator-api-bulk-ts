@@ -18,7 +18,7 @@ describe('BatchProcessor', () => {
       expect(result.failed).toHaveLength(0);
       expect(result.batchNumber).toBe(2); // 6 items / 3 batch size = 2 batches
       expect(operation).toHaveBeenCalledTimes(6);
-      expect(result.duration).toBeGreaterThan(0);
+      expect(result.duration).toBeGreaterThanOrEqual(0); // Duration can be 0 for fast operations
     });
 
     it('should handle partial failures', async () => {

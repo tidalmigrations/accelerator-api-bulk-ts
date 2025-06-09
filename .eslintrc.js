@@ -12,6 +12,14 @@ module.exports = {
     es6: true,
   },
   ignorePatterns: ["dist/", "node_modules/", "coverage/", "*.js", "*.d.ts"],
+  overrides: [
+    {
+      files: ["**/*.test.ts", "**/*.spec.ts"],
+      env: {
+        jest: true,
+      },
+    },
+  ],
   rules: {
     // General ESLint rules
     "no-console": "warn",
