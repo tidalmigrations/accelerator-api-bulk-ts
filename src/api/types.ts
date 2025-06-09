@@ -10,9 +10,17 @@ export interface AuthResponse {
   token_type: string;
 }
 
+export interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+  enableJitter: boolean;
+}
+
 export interface ClientConfig {
   workspace: string;
   baseUrl?: string;
+  retry?: RetryConfig;
 }
 
 export interface ApiResponse<T = any> {
