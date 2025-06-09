@@ -39,6 +39,40 @@ export class Logger {
     this.log(LogLevel.DEBUG, message, context);
   }
 
+  private serializeContext(context: any): string {
+    if (!context) return '';
+    
+    // Handle Error objects specially
+    if (context instanceof Error) {
+      return JSON.stringify({
+        name: context.name,
+        message: context.message,
+        stack: context.stack,
+        ...(context as any) // Include any additional properties
+      });
+    }
+    
+    // Handle objects that might contain Error objects
+    if (typeof context === 'object') {
+      const serialized: any = {};
+      for (const [key, value] of Object.entries(context)) {
+        if (value instanceof Error) {
+          serialized[key] = {
+            name: value.name,
+            message: value.message,
+            stack: value.stack,
+            ...(value as any)
+          };
+        } else {
+          serialized[key] = value;
+        }
+      }
+      return JSON.stringify(serialized);
+    }
+    
+    return JSON.stringify(context);
+  }
+
   private log(level: LogLevel, message: string, context?: any): void {
     if (level <= this.level) {
       const entry: LogEntry = {
@@ -50,7 +84,7 @@ export class Logger {
 
       const levelName = LogLevel[level];
       const timestamp = entry.timestamp.toISOString();
-      const contextStr = context ? ` ${JSON.stringify(context)}` : '';
+      const contextStr = context ? ` ${this.serializeContext(context)}` : '';
       
       console.log(`[${timestamp}] ${levelName}: ${message}${contextStr}`);
     }

@@ -1,14 +1,26 @@
 // API exports
 export { TidalApiClient } from './api/client';
 export { AuthService } from './api/auth';
+export { BulkOperationsService } from './api/bulk';
 export * from './api/types';
 
 // Configuration exports
 export * from './config/environment';
 
+// Operations exports
+export { BaseBulkOperation } from './operations/base';
+export { GenericBulkOperations } from './operations/generic';
+export { ServerBulkOperations } from './operations/servers';
+export * from './operations/servers';
+
+// Type exports
+export * from './types/bulk';
+
 // Utility exports
 export * from './utils/errors';
 export { Logger, LogLevel, logger } from './utils/logger';
+export { BatchProcessor } from './utils/batch';
+export { InputValidator, ValidationError } from './utils/validation';
 
 // Example usage
 import { TidalApiClient } from './api/client';

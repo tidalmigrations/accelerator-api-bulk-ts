@@ -25,6 +25,12 @@ describe('Environment Configuration', () => {
         workspace: 'test-workspace',
         baseUrl: 'https://custom.api.com',
         logLevel: 'debug',
+        bulk: {
+          batchSize: 50,
+          concurrentBatches: 3,
+          retryAttempts: 3,
+          retryDelay: 1000,
+        },
       });
     });
 
@@ -39,6 +45,12 @@ describe('Environment Configuration', () => {
         workspace: 'test-workspace',
         baseUrl: 'https://test-workspace.tidal.cloud/api/v1',
         logLevel: 'info',
+        bulk: {
+          batchSize: 50,
+          concurrentBatches: 3,
+          retryAttempts: 3,
+          retryDelay: 1000,
+        },
       });
     });
 

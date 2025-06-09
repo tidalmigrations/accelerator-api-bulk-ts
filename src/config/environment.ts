@@ -4,10 +4,18 @@ import { ConfigurationError } from '../utils/errors';
 // Load environment variables
 dotenv.config();
 
+export interface BulkConfig {
+  batchSize: number;
+  concurrentBatches: number;
+  retryAttempts: number;
+  retryDelay: number;
+}
+
 export interface Config {
   workspace: string;
   baseUrl: string;
   logLevel: string;
+  bulk: BulkConfig;
 }
 
 export function loadConfig(): Config {
@@ -21,10 +29,19 @@ export function loadConfig(): Config {
   // Auto-generate base URL from workspace
   const baseUrl = process.env.TIDAL_BASE_URL || `https://${workspace}.tidal.cloud/api/v1`;
 
+  // Load bulk configuration
+  const bulk: BulkConfig = {
+    batchSize: parseInt(process.env.BULK_BATCH_SIZE || '50', 10),
+    concurrentBatches: parseInt(process.env.BULK_CONCURRENT_BATCHES || '3', 10),
+    retryAttempts: parseInt(process.env.BULK_RETRY_ATTEMPTS || '3', 10),
+    retryDelay: parseInt(process.env.BULK_RETRY_DELAY || '1000', 10),
+  };
+
   return {
     workspace,
     baseUrl,
     logLevel,
+    bulk,
   };
 }
 
