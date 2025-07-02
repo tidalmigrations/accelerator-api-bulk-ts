@@ -1,6 +1,7 @@
 plans/
 TODO.md
 backups/
+data/
 
 # Dependencies
 node_modules/

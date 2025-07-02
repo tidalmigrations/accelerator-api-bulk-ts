@@ -564,4 +564,28 @@ export class ServerBulkOperations extends BaseBulkOperation<Server> {
     
     return true;
   }
+
+  /**
+   * Find a server by its hostname
+   * Returns the first server that exactly matches the hostname (case-insensitive)
+   */
+  async findServerByHostname(hostname: string): Promise<Server | null> {
+    try {
+      logger.debug('Fetching servers', { filter: { search: hostname, limit: 10 } });
+      const servers = await this.getServers({ 
+        search: hostname,
+        limit: 10 
+      });
+
+      // Look for exact hostname match
+      const matchingServer = servers.find(server => 
+        server.host_name?.toLowerCase() === hostname.toLowerCase()
+      );
+
+      return matchingServer || null;
+    } catch (error) {
+      logger.error('Failed to find server by hostname', { error, hostname });
+      throw error;
+    }
+  }
 } 

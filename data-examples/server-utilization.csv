@@ -1,0 +1,11 @@
+Name,CPU Utilization %,Memory Utilization %,Disk Utilization % (Peak)
+server01,25.5,65.2,45.3
+server02,78.9,92.1,67.8
+web-server-01,45.2,78.5,34.6
+db-server-01,89.3,95.7,78.2
+app-server-01,34.7,56.8,23.9
+web-server-02,52.1,71.3,56.4
+db-server-02,91.2,88.9,82.1
+cache-server-01,12.8,34.5,15.7
+api-server-01,67.4,82.3,49.5
+load-balancer-01,23.6,45.8,12.3 

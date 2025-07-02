@@ -13,7 +13,9 @@
     "start": "ts-node src/index.ts",
     "dev": "ts-node --watch src/index.ts",
     "demo:server-backup": "ts-node examples/server-backup-demo.ts",
-    "demo:hostname-fqdn": "ts-node examples/hostname-to-fqdn-demo.ts"
+    "demo:hostname-fqdn": "ts-node examples/hostname-to-fqdn-demo.ts",
+    "demo:cpu-utilization": "ts-node examples/cpu-utilization-update-demo.ts",
+    "demo:cpu-utilization:dry-run": "ts-node examples/cpu-utilization-update-demo.ts --dry-run"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",

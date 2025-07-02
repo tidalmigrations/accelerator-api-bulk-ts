@@ -31,10 +31,12 @@ TIDAL_WORKSPACE=your_workspace_name
 TIDAL_USERNAME=your_username
 TIDAL_PASSWORD=your_password
 LOG_LEVEL=info
-BULK_BATCH_SIZE=50
-BULK_CONCURRENT_BATCHES=3
-BULK_RETRY_ATTEMPTS=3
-BULK_RETRY_DELAY=1000
+BULK_BATCH_SIZE=5
+BULK_CONCURRENT_BATCHES=1
+BULK_RETRY_ATTEMPTS=5
+BULK_RETRY_DELAY=2000
+CPU_UTILIZATION_CSV_PATH=data-examples/server-utilization.csv
+DRY_RUN=false
 ```
 
 The base URL is automatically generated as `https://{workspace}.tidal.cloud/api/v1`.
@@ -107,9 +109,54 @@ Or run directly:
 npx ts-node examples/server-backup-demo.ts
 ```
 
+### CPU Utilization Update Demo
+
+Updates server custom fields with CPU utilization data from CSV. Configure the CSV file path in your `.env` file using `CPU_UTILIZATION_CSV_PATH`.
+
+**CSV Format Requirements:**
+```csv
+Name,CPU Utilization %,Memory Utilization %,Disk Utilization % (Peak)
+server01,25.5,65.2,45.3
+server02,78.9,92.1,67.8
+```
+
+**Dry Run Mode:**
+Preview changes before applying them:
+
+```bash
+# Using npm script (recommended)
+npm run demo:cpu-utilization:dry-run
+
+# Using command line flag
+npx ts-node examples/cpu-utilization-update-demo.ts --dry-run
+
+# Using environment variable
+DRY_RUN=true npm run demo:cpu-utilization
+```
+
+**Apply Changes:**
+```bash
+npm run demo:cpu-utilization
+```
+
+Or run directly:
+
+```bash
+npx ts-node examples/cpu-utilization-update-demo.ts
+```
+
+**Rate Limiting:**
+The demo includes built-in rate limiting protection:
+- Sequential processing (not concurrent) to avoid overwhelming the API
+- 500ms delays between individual API calls
+- 2-3 second delays between batches
+- Automatic retry with exponential backoff for 429 errors
+- Conservative batch sizes (5 records per batch)
+
 ### Available Examples
 
 - `basic-authentication.ts` - Authentication methods and client setup
+- `cpu-utilization-update-demo.ts` - Update server custom fields from CSV data
 - `server-backup-demo.ts` - Server backup operations
 - `hostname-to-fqdn-demo.ts` - Hostname to FQDN conversion
 - `hostname-to-tag-demo.ts` - Hostname to tag operations

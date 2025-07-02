@@ -16,6 +16,7 @@ export interface Config {
   baseUrl: string;
   logLevel: string;
   bulk: BulkConfig;
+  cpuUtilizationCsvPath: string;
 }
 
 export function loadConfig(): Config {
@@ -42,6 +43,7 @@ export function loadConfig(): Config {
     baseUrl,
     logLevel,
     bulk,
+    cpuUtilizationCsvPath: process.env.CPU_UTILIZATION_CSV_PATH || 'data-examples/server-utilization.csv',
   };
 }
 
