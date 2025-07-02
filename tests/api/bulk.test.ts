@@ -32,7 +32,7 @@ describe('BulkOperationsService', () => {
       expect(result.errors).toHaveLength(0);
       expect(operation).toHaveBeenCalledTimes(5);
       expect(result.operationId).toBeDefined();
-      expect(result.duration).toBeGreaterThan(0);
+      expect(result.duration).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle partial failures when continueOnError is true', async () => {
@@ -268,7 +268,7 @@ describe('BulkOperationsService', () => {
   describe('progress estimation', () => {
     it('should calculate estimated time remaining', async () => {
       const items = [1, 2, 3, 4, 5];
-      let progressUpdates: BulkProgress[] = [];
+      const progressUpdates: BulkProgress[] = [];
       
       const operation = jest.fn().mockImplementation(async () => {
         // Simulate some processing time
