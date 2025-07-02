@@ -2,6 +2,7 @@ plans/
 TODO.md
 backups/
 data/
+reports/
 
 # Dependencies
 node_modules/

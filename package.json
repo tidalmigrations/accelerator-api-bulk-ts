@@ -15,7 +15,9 @@
     "demo:server-backup": "ts-node examples/server-backup-demo.ts",
     "demo:hostname-fqdn": "ts-node examples/hostname-to-fqdn-demo.ts",
     "demo:cpu-utilization": "ts-node examples/cpu-utilization-update-demo.ts",
-    "demo:cpu-utilization:dry-run": "ts-node examples/cpu-utilization-update-demo.ts --dry-run"
+    "demo:cpu-utilization:dry-run": "ts-node examples/cpu-utilization-update-demo.ts --dry-run",
+    "demo:cpu-util-default": "ts-node examples/cpu-util-default-value-demo.ts",
+    "demo:cpu-util-default:dry-run": "ts-node examples/cpu-util-default-value-demo.ts --dry-run"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
