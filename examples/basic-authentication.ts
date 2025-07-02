@@ -17,7 +17,6 @@
 
 import { TidalApiClient, createAuthenticatedClient } from '../src/index';
 import { AuthenticationError, TidalApiError } from '../src/utils/errors';
-import { logger } from '../src/utils/logger';
 import { loadConfig, getAuthCredentials } from '../src/config/environment';
 
 async function basicAuthenticationExample() {
