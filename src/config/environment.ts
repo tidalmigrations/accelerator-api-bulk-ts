@@ -17,6 +17,7 @@ export interface Config {
   logLevel: string;
   bulk: BulkConfig;
   cpuUtilizationCsvPath: string;
+  utilizationCsvPath: string;
 }
 
 export function loadConfig(): Config {
@@ -44,6 +45,7 @@ export function loadConfig(): Config {
     logLevel,
     bulk,
     cpuUtilizationCsvPath: process.env.CPU_UTILIZATION_CSV_PATH || 'data-examples/server-utilization.csv',
+    utilizationCsvPath: process.env.UTILIZATION_CSV_PATH || 'data-examples/server-utilization.csv',
   };
 }
 

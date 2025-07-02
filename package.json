@@ -17,7 +17,9 @@
     "demo:cpu-utilization": "ts-node examples/cpu-utilization-update-demo.ts",
     "demo:cpu-utilization:dry-run": "ts-node examples/cpu-utilization-update-demo.ts --dry-run",
     "demo:cpu-util-default": "ts-node examples/cpu-util-default-value-demo.ts",
-    "demo:cpu-util-default:dry-run": "ts-node examples/cpu-util-default-value-demo.ts --dry-run"
+    "demo:cpu-util-default:dry-run": "ts-node examples/cpu-util-default-value-demo.ts --dry-run",
+    "demo:memory-storage-utilization": "ts-node examples/memory-storage-utilization-update-demo.ts",
+    "demo:memory-storage-utilization:dry-run": "ts-node examples/memory-storage-utilization-update-demo.ts --dry-run"
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
