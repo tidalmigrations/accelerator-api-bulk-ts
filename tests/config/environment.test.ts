@@ -6,7 +6,8 @@ describe('Environment Configuration', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...originalEnv };
+    // Clear all environment variables and only keep the ones we explicitly set
+    process.env = {};
   });
 
   afterAll(() => {
@@ -31,6 +32,8 @@ describe('Environment Configuration', () => {
           retryAttempts: 3,
           retryDelay: 1000,
         },
+        cpuUtilizationCsvPath: 'data-examples/server-utilization.csv',
+        utilizationCsvPath: 'data-examples/server-utilization.csv',
       });
     });
 
@@ -51,6 +54,8 @@ describe('Environment Configuration', () => {
           retryAttempts: 3,
           retryDelay: 1000,
         },
+        cpuUtilizationCsvPath: 'data-examples/server-utilization.csv',
+        utilizationCsvPath: 'data-examples/server-utilization.csv',
       });
     });
 
